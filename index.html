@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Calculator Web Application</title>
+  <style>
+    /* --- page layout / look inspired by the screenshot --- */
+    :root{
+      --bg:#201e26;
+      --panel:#2b2730;
+      --accent:#3fe0c9;
+      --muted:#bfc3cc;
+      --glass: rgba(255,255,255,0.03);
+      --danger:#ff6b6b;
+      --btn:#36343b;
+      --btn-hover:#3f3d44;
+      --font-sans: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
+    }
+
+    html,body{
+      height:100%;
+      margin:0;
+      font-family:var(--font-sans);
+      background:
+        radial-gradient(1200px 400px at 10% 80%, rgba(63,224,201,0.06), transparent 10%),
+        radial-gradient(800px 300px at 90% 20%, rgba(98,88,255,0.03), transparent 10%),
+        var(--bg);
+      color:var(--muted);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:32px;
+      box-sizing:border-box;
+    }
+
+    .card {
+      width:100%;
+      max-width:1000px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+      border-radius:14px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+      overflow:hidden;
+      display:grid;
+      grid-template-columns: 1fr 420px;
+      gap:0;
+    }
+
+    /* left slide / info */
+    .info {
+      padding:40px 36px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.02), transparent);
+      position:relative;
+      min-height:360px;
+    }
+    .task{
+      display:inline-block;
+      padding:8px 12px;
+      border:1px solid rgba(255,255,255,0.06);
+      color:#fff;
+      background: rgba(255,255,255,0.02);
+      font-weight:700;
+      font-size:13px;
+      margin-bottom:18px;
+      border-radius:4px;
+    }
+    h1{
+      margin:6px 0 22px 0;
+      color:#ffffff;
+      font-size:34px;
+      letter-spacing:1px;
+    }
+    p.desc{
+      line-height:1.5;
+      color:var(--muted);
+      max-width:420px;
+      margin-bottom:28px;
+    }
+    .credits{
+      position:absolute;
+      bottom:16px;
+      left:36px;
+      font-size:12px;
+      color: rgba(255,255,255,0.35);
+    }
+
+    /* right: calculator */
+    .calculator-wrap{
+      padding:28px;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.01), rgba(0,0,0,0.03));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .calculator {
+      width:100%;
+      max-width:340px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.018), rgba(0,0,0,0.02));
+      border-radius:12px;
+      padding:18px;
+      box-sizing:border-box;
+      border: 1px solid rgba(255,255,255,0.03);
+    }
+
+    .screen {
+      background:linear-gradient(180deg, rgba(0,0,0,0.12), rgba(255,255,255,0.01));
+      border-radius:8px;
+      padding:14px;
+      min-height:78px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      margin-bottom:14px;
+      color:#e6e6e6;
+    }
+    .expr {
+      font-size:13px;
+      color:rgba(255,255,255,0.55);
+      min-height:18px;
+      word-break:break-all;
+    }
+    .output {
+      font-size:28px;
+      font-weight:700;
+      text-align:right;
+      margin-top:6px;
+      word-break:break-all;
+    }
+
+    .keys {
+      display:grid;
+      grid-template-columns: repeat(4,1fr);
+      gap:10px;
+    }
+
+    button.key {
+      border: none;
+      background:var(--btn);
+      color:#fff;
+      padding:14px 12px;
+      border-radius:8px;
+      font-size:18px;
+      cursor:pointer;
+      transition:transform .06s ease, background .08s;
+      box-shadow: inset 0 -3px 0 rgba(0,0,0,0.15);
+    }
+    button.key:active{ transform: translateY(2px); }
+    button.key:hover { background:var(--btn-hover); }
+
+    button.op {
+      background: linear-gradient(180deg, rgba(63,224,201,0.14), rgba(63,224,201,0.06));
+      color: #061018;
+      font-weight:700;
+    }
+    button.accent {
+      background: linear-gradient(180deg, rgba(255,107,107,0.12), rgba(255,107,107,0.06));
+      color: #ffdddd;
+    }
+
+    .span-2 { grid-column: span 2; }
+    .big { grid-column: span 4; font-size:18px; padding:12px; text-align:center; }
+
+    .small-note { font-size:12px; color:rgba(255,255,255,0.35); margin-top:10px; text-align:center; }
+    @media (max-width:880px){
+      .card { grid-template-columns: 1fr; }
+      .info { order:2; }
+      .calculator-wrap { order:1; }
+      .calculator { max-width:100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card" role="application" aria-label="Calculator app with info panel">
+    <section class="info" aria-hidden="false">
+      <div class="task">TASK 02</div>
+      <h1>Calculator Web Application</h1>
+      <p class="desc">
+        calculator web application
+      </p>
+      <div class="credits">SkillCraft Technology</div>
+    </section>
+
+    <aside class="calculator-wrap">
+      <div class="calculator" id="calc">
+        <div class="screen" aria-live="polite">
+          <div id="expression" class="expr" aria-hidden="false"></div>
+          <div id="output" class="output">0</div>
+        </div>
+
+        <div class="keys" role="group" aria-label="Calculator keys">
+          <button class="key accent" data-action="clear" title="Clear (C)">C</button>
+          <button class="key" data-action="back" title="Backspace (Del)">DEL</button>
+          <button class="key" data-action="posneg" title="Toggle sign">±</button>
+          <button class="key op" data-value="/" title="Divide">÷</button>
+
+          <button class="key" data-value="7">7</button>
+          <button class="key" data-value="8">8</button>
+          <button class="key" data-value="9">9</button>
+          <button class="key op" data-value="*" title="Multiply">×</button>
+
+          <button class="key" data-value="4">4</button>
+          <button class="key" data-value="5">5</button>
+          <button class="key" data-value="6">6</button>
+          <button class="key op" data-value="-" title="Subtract">−</button>
+
+          <button class="key" data-value="1">1</button>
+          <button class="key" data-value="2">2</button>
+          <button class="key" data-value="3">3</button>
+          <button class="key op" data-value="+" title="Add">+</button>
+
+          <button class="key span-2" data-value="0">0</button>
+          <button class="key" data-value=".">.</button>
+          <button class="key op" data-action="equals" id="equals">=</button>
+        </div>
+
+        <div class="small-note">Keyboard support: numbers, + - * / . Enter = Backspace Esc</div>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    /***********************
+     * Simple calculator with
+     * - DOM event handling
+     * - Keyboard support
+     * - Expression parsing (shunting-yard -> RPN)
+     * - Error handling
+     ***********************/
+
+    (function(){
+      const expressionEl = document.getElementById('expression');
+      const outputEl = document.getElementById('output');
+      const keys = document.querySelectorAll('.key');
+
+      let expr = '';      // user-visible expression (string)
+      let lastResult = null;
+
+      // Helper: update UI (with small sanitization)
+      function updateUI(){
+        expressionEl.textContent = expr || '';
+        outputEl.textContent = expr === '' ? '0' : expr;
+      }
+
+      // Clear all
+      function clearAll(){
+        expr = '';
+        lastResult = null;
+        updateUI();
+      }
+
+      // Backspace/delete last char
+      function backspace(){
+        if (expr.length > 0){
+          expr = expr.slice(0, -1);
+          updateUI();
+        }
+      }
+
+      // Toggle sign of the last number token
+      function toggleSign(){
+        // Find last number in expression using regex from the end
+        const match = expr.match(/(-?\d*\.?\d+)\s*$/);
+        if (!match) return;
+        const num = match[1];
+        const start = match.index;
+        const negated = (num.startsWith('-')) ? num.slice(1) : '-' + num;
+        expr = expr.slice(0, start) + negated;
+        updateUI();
+      }
+
+      // Append value safely (digits/operators/dot)
+      function appendValue(v){
+        // Avoid multiple dots in a single number
+        if (v === '.') {
+          // get last token
+          const m = expr.match(/(\d*\.\d*|\d+)$/);
+          if (m && m[0].includes('.')) return; // already has dot
+          if (!m) {
+            // start a number with 0.
+            expr += '0';
+          }
+          expr += '.';
+          updateUI();
+          return;
+        }
+
+        // If operator
+        if (['+','-','*','/'].includes(v)){
+          if (expr === '' && v === '-') { expr = '-'; updateUI(); return; } // allow negative start
+          // prevent consecutive operators (replace if previous is operator)
+          if (/[+\-*/]\s*$/.test(expr)){
+            expr = expr.replace(/[+\-*/]\s*$/, v);
+          } else {
+            expr += v;
+          }
+          updateUI();
+          return;
+        }
+
+        // Digit
+        expr += v;
+        updateUI();
+      }
+
+      // When equals requested: parse and evaluate
+      function computeExpression(){
+        if (!expr || expr.trim() === '') return;
+        try {
+          const rpn = toRPN(expr);
+          const val = evalRPN(rpn);
+          if (!isFinite(val) || Number.isNaN(val)) throw new Error('Invalid result');
+
+          // Round to sensible digits
+          const rounded = roundResult(val);
+          lastResult = rounded;
+          expr = String(rounded);
+          updateUI();
+        } catch (err){
+          // Display error gracefully
+          outputEl.textContent = 'Error';
+          setTimeout(()=> {
+            outputEl.textContent = expr || '0';
+          }, 900);
+          console.error('Calc error:', err);
+        }
+      }
+
+      // Rounding helper
+      function roundResult(n){
+        // handle floats: preserve up to 10 decimal places, strip trailing zeros
+        const fixed = Math.round((n + Number.EPSILON) * 1e10) / 1e10;
+        return parseFloat(String(fixed));
+      }
+
+      /***********************
+       * Shunting-yard algorithm -> RPN token array
+       * Supports: + - * / and unary minus (handled by tokenizer)
+       ***********************/
+      function toRPN(input){
+        // Tokenize: numbers and operators
+        const tokens = tokenize(input);
+
+        const outQueue = [];
+        const opStack = [];
+
+        const prec = { '+':1, '-':1, '*':2, '/':2 };
+        const isLeftAssoc = (op) => ['+','-','*','/'].includes(op);
+
+        for (let tok of tokens){
+          if (tok.type === 'number'){
+            outQueue.push(tok);
+          } else if (tok.type === 'op'){
+            const o1 = tok.value;
+            while (opStack.length){
+              const o2 = opStack[opStack.length-1];
+              if (o2.type === 'op' && 
+                  ((isLeftAssoc(o1) && prec[o1] <= prec[o2.value]) ||
+                   (!isLeftAssoc(o1) && prec[o1] < prec[o2.value]))){
+                outQueue.push(opStack.pop());
+              } else break;
+            }
+            opStack.push(tok);
+          } else {
+            throw new Error('Unknown token: ' + JSON.stringify(tok));
+          }
+        }
+
+        while (opStack.length){
+          const op = opStack.pop();
+          outQueue.push(op);
+        }
+
+        return outQueue;
+      }
+
+      function tokenize(str){
+        const s = str.replace(/\s+/g,'');
+        const tokens = [];
+        let i = 0;
+        while (i < s.length){
+          const ch = s[i];
+
+          if (/\d|\./.test(ch)){
+            // number
+            let j = i;
+            while (j < s.length && /[\d.]/.test(s[j])) j++;
+            const numStr = s.slice(i,j);
+            if (numStr.split('.').length > 2) throw new Error('Invalid number');
+            tokens.push({ type:'number', value: parseFloat(numStr) });
+            i = j;
+            continue;
+          }
+
+          if (/[+\-*/]/.test(ch)){
+            // handle unary minus: convert to negative number if at start or preceded by operator
+            if (ch === '-' ){
+              const prev = tokens.length ? tokens[tokens.length-1] : null;
+              if (!prev || (prev.type === 'op')){
+                // unary minus: consume following number
+                // If next is number, parse it as negative; if not, push 0 and unary minus as operator
+                let j = i+1;
+                if (j < s.length && /[\d.]/.test(s[j])){
+                  let k = j;
+                  while (k < s.length && /[\d.]/.test(s[k])) k++;
+                  const numStr = s.slice(j,k);
+                  tokens.push({ type:'number', value: -parseFloat(numStr) });
+                  i = k;
+                  continue;
+                } else {
+                  // treat as binary with leading 0 (0 - ...)
+                  tokens.push({ type:'number', value: 0 });
+                }
+              }
+            }
+            tokens.push({ type:'op', value: ch });
+            i++;
+            continue;
+          }
+
+          // unknown character
+          throw new Error('Invalid character in expression: ' + ch);
+        }
+        return tokens;
+      }
+
+      // Evaluate RPN
+      function evalRPN(rpn){
+        const stack = [];
+        for (let t of rpn){
+          if (t.type === 'number'){
+            stack.push(t.value);
+          } else if (t.type === 'op'){
+            const b = stack.pop();
+            const a = stack.pop();
+            if (typeof a === 'undefined' || typeof b === 'undefined') throw new Error('Invalid expression');
+            let res;
+            switch(t.value){
+              case '+': res = a + b; break;
+              case '-': res = a - b; break;
+              case '*': res = a * b; break;
+              case '/': res = a / b; break;
+              default: throw new Error('Unknown operator ' + t.value);
+            }
+            stack.push(res);
+          } else throw new Error('Bad token ' + JSON.stringify(t));
+        }
+        if (stack.length !== 1) throw new Error('Invalid expression (stack not 1)');
+        return stack[0];
+      }
+
+      // --- wiring up buttons ---
+      keys.forEach(k => {
+        k.addEventListener('click', onKeyClick);
+      });
+
+      function onKeyClick(e){
+        const btn = e.currentTarget;
+        const v = btn.getAttribute('data-value');
+        const action = btn.getAttribute('data-action');
+
+        if (action === 'clear') { clearAll(); return; }
+        if (action === 'back') { backspace(); return; }
+        if (action === 'posneg') { toggleSign(); return; }
+        if (action === 'equals') { computeExpression(); return; }
+
+        if (v !== null){
+          appendValue(v);
+        }
+      }
+
+      // keyboard support
+      window.addEventListener('keydown', (ev) => {
+        // map keys: numbers, + - * / . Enter (=), Backspace, Delete, Escape (clear)
+        if (ev.key >= '0' && ev.key <= '9') { appendValue(ev.key); ev.preventDefault(); return; }
+        if (ev.key === '.' || ev.key === ','){ appendValue('.'); ev.preventDefault(); return; }
+        if (ev.key === '+' || ev.key === '-' || ev.key === '*' || ev.key === '/') { appendValue(ev.key); ev.preventDefault(); return; }
+        if (ev.key === 'Enter' || ev.key === '=') { computeExpression(); ev.preventDefault(); return; }
+        if (ev.key === 'Backspace') { backspace(); ev.preventDefault(); return; }
+        if (ev.key === 'Delete') { clearAll(); ev.preventDefault(); return; }
+        if (ev.key === 'Escape') { clearAll(); ev.preventDefault(); return; }
+      });
+
+      // init
+      clearAll();
+    })();
+  </script>
+</body>
+</html>
